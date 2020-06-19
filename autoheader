@@ -1,0 +1,21 @@
+#!/bin/bash -e
+options=-e
+for x in $@; do
+	if [ "$x" == -v ]; then
+	   options=-xe
+	fi
+done
+here=$(cd "$(dirname "$0")"; pwd)
+export AUTOM4TE_CFG=$here/generated/autom4te.cfg
+export AUTOMAKE_LIBDIR=$here/_automake/lib
+export AUTOM4TE="$here/generated/autom4te"
+set "$options"
+mkdir -p "$here/generated"
+"$here/_make" $options _autoconf bin/autom4te.in autom4te
+"$here/_make" $options _autoconf lib/autom4te.in autom4te.cfg 
+make --silent -C $here/_autoconf/lib/m4sugar version.m4 -f Makefile.am\
+	 -o Makefile -B PACKAGE_VERSION=2.65 top_srcdir="$here/_autoconf"
+"$here/_make" $options _autoconf bin/autoheader.in autoheader
+PATH=$here:$PATH\
+	PERL5LIB=$here/_autoconf/lib\
+	perl -w "$here/generated/autoheader" "$@"

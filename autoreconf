@@ -1,0 +1,36 @@
+#!/bin/bash
+options=-e
+for x; do
+	case "$x" in
+		-*v*) vflag=-v; vflag_long=--verbose; options=-xe;;
+	esac
+done
+here=$(cd "$(dirname "$0")"; pwd)
+export AUTOM4TE_CFG=$here/generated/autom4te.cfg
+export AUTOMAKE_LIBDIR=$here/_automake/lib
+export AUTOM4TE="$here/generated/autom4te"
+set $options
+"$here/_make" $options _autoconf bin/autom4te.in autom4te
+"$here/_make" $options _autoconf lib/autom4te.in autom4te.cfg
+"$AUTOM4TE" --language M4sh --cache '' --melt\
+			"$here/_autoconf/bin/autoconf.as" -o "$here/generated/autoconf.in"
+# TODO move version to a single place
+make -C $here/_autoconf/lib/m4sugar version.m4 -f Makefile.am\
+	 -o Makefile -B PACKAGE_VERSION=2.65 top_srcdir="$here/_autoconf"
+mkdir -p "$here/generated/lib/Automake"
+"$here/_make" $options _automake lib/Automake/Config.in\
+			  lib/Automake/Config.pm
+"$here/_make" $options _autoconf bin/autoreconf.in autoreconf
+"$here/_make" $options _autoconf bin/autoheader.in autoheader
+"$here/_make" $options generated autoconf.in autoconf
+PATH=$here:$PATH\
+	ACLOCAL="perl -x -w $here/_automake/bin/aclocal.in $vflag_long"\
+	AUTOHEADER="perl -w $here/generated/autoheader $vflag_long"\
+	AUTOMAKE_UNINSTALLED=1\
+	ACLOCAL_AUTOMAKE_DIR=$here/_automake/m4\
+	AUTOCONF="bash $here/generated/autoconf $vflag"\
+	PERL5LIB=$here/generated/lib:$AUTOMAKE_LIBDIR:$here/_autoconf/lib\
+	perl -x -w "$here/generated/autoreconf" "$@"
+head configure
+# (modify-syntax-entry ?/ ".")
+# (message "Char syntax: /=%s" (string (char-syntax ?/)))

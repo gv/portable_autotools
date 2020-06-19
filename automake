@@ -1,0 +1,16 @@
+#!/bin/bash
+here=$(cd "$(dirname "$0")"; pwd)
+options=-e
+for x in $*; do
+	if [ "$x" == -v -o "$x" == --verbose ]; then
+	   options=-xe
+	fi
+done
+export AUTOMAKE_LIBDIR=$here/_automake/lib AUTOMAKE_UNINSTALLED=1
+set $options
+mkdir -p "$here/generated/lib/Automake"
+"$here/_make" $options _automake lib/Automake/Config.in\
+			  lib/Automake/Config.pm
+"$here/_make" $options _automake bin/automake.in automake
+PERL5LIB=$here/generated/lib:$AUTOMAKE_LIBDIR\
+		exec perl -x -w "$here/generated/automake" "$@"

@@ -1,0 +1,34 @@
+#!/bin/bash
+usage () {
+	echo "Usage: $0 BASH_OPTIONS _autoconf|_automake|generated\
+  SOURCE_NAME OUTPUT_NAME"
+	exit 1
+}
+
+if [ $# != 4 ]; then
+	usage
+fi
+options=$1
+subdir=$2
+sourcename=$3
+outputname=$4
+here=$(cd "$(dirname "$0")"; pwd)
+case "$subdir" in
+	_autoconf|generated) VERSION=2.65;;
+	_automake) VERSION=1.16a;;
+	*) usage
+esac
+edit="
+-e s|@pkgdatadir[@]|$here/_autoconf/lib|g
+-e s|@PERL[@]|/usr/bin/perl|g
+-e s|@PACKAGE_NAME[@]|portable_autotools|g
+-e s|@VERSION[@]|$VERSION|g
+-e s|@RELEASE_YEAR[@]|2020|g
+-e s|@M4[@]|m4|g
+-e s|@M4_GNU[@]||g
+-e s|@M4_DEBUGFILE[@]|--error-output|g
+"
+# we are not make, so no need for tempfiles here
+set $options
+sed $edit "$here/$subdir/$sourcename" > "$here/generated/$outputname"
+chmod +x "$here/generated/$outputname"
